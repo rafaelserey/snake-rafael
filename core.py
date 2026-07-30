@@ -67,26 +67,21 @@ def select_direction(
     return requested_direction
 
 
-def wrap_position(position: Position, board: Board) -> Position:
-    return Position(
-        x=position.x % board.width,
-        y=position.y % board.height,
-    )
+
 
 
 def next_head(
     snake: Snake,
-    board: Board,
     requested_direction: Direction | None,
 ) -> tuple[Position, Direction]:
     new_direction = select_direction(
         current_direction=snake.direction,
         requested_direction=requested_direction,
     )
-    moved_head = snake.head.move(new_direction)
-    wrapped_head = wrap_position(moved_head, board)
 
-    return wrapped_head, new_direction
+    new_head = snake.head.move(new_direction)
+
+    return new_head, new_direction
 
 
 def has_self_collision(body: tuple[Position, ...]) -> bool:
@@ -145,23 +140,20 @@ def advance(
     direction: Direction | None,
     replacement_fruit: Position,
 ) -> Result[GameState, GameError]:
-    """
-    Avança o jogo em um passo.
 
-    Essa função é pura:
-    - não lê teclado;
-    - não imprime;
-    - não usa números aleatórios;
-    - não altera o estado recebido.
-    """
 
     new_head, new_direction = next_head(
         snake=state.snake,
-        board=state.board,
         requested_direction=direction,
     )
 
-    ate_fruit = has_eaten_fruit(new_head, state.fruit)
+    if not state.board.contains(new_head):
+        return Err(GameError.WALL_COLLISION)
+
+    ate_fruit = has_eaten_fruit(
+        head=new_head,
+        fruit=state.fruit,
+    )
 
     new_body = move_body(
         body=state.snake.body,
@@ -172,7 +164,11 @@ def advance(
     if has_self_collision(new_body):
         return Err(GameError.SELF_COLLISION)
 
-    new_fruit = replacement_fruit if ate_fruit else state.fruit
+    new_fruit = (
+        replacement_fruit
+        if ate_fruit
+        else state.fruit
+    )
 
     if new_fruit in new_body:
         return Err(GameError.INVALID_FRUIT)

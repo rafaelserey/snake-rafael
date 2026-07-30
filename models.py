@@ -28,6 +28,7 @@ class GameError(Enum):
     SELF_COLLISION = "a cobra colidiu com ela mesma"
     INVALID_FRUIT = "fruta foi posicionada em posição inválida"
     INVALID_BOARD = "tabuleiro dimensionado em posições inválidas"
+    WALL_COLLISION = "a cobra colidiu com a parede"
 
 
 class Board(NamedTuple):

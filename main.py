@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import random
 
 from blessed import Terminal
@@ -12,11 +11,18 @@ from models import Direction, GameError, GameState, Position
 BOARD_WIDTH = 40
 BOARD_HEIGHT = 18
 
-SNAKE_HEAD = "█"
-SNAKE_BODY = "█"
-FRUIT = "🍎"
+SNAKE_BODY = "●"
+FRUIT = "●"
+
 BORDER_HORIZONTAL = "-"
 BORDER_VERTICAL = "|"
+
+HEAD_CHARACTERS: dict[Direction, str] = {
+    Direction.UP: "▲",
+    Direction.RIGHT: "▶",
+    Direction.DOWN: "▼",
+    Direction.LEFT: "◀",
+}
 
 
 def random_position(
@@ -98,9 +104,11 @@ def draw_border(term: Terminal, state: GameState) -> str:
 def draw_snake(term: Terminal, state: GameState) -> str:
     head, *body = state.snake.body
 
+    head_character = HEAD_CHARACTERS[state.snake.direction]
+
     head_output = (
         term.move_xy(head.x + 1, head.y + 1)
-        + term.bold_green(SNAKE_HEAD)
+        + term.bold_green(head_character)
     )
 
     body_output = "".join(
@@ -110,7 +118,6 @@ def draw_snake(term: Terminal, state: GameState) -> str:
     )
 
     return head_output + body_output
-
 
 def draw_fruit(term: Terminal, state: GameState) -> str:
     fruit = state.fruit
