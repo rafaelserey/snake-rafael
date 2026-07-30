@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import random
-import time
 
 from blessed import Terminal
 from result import Result
 
 from core import advance, available_positions, initial_state, speed_for_score
-from models import GameError, GameState, Position, Turn
+from models import Direction, GameError, GameState, Position
 
 
 BOARD_WIDTH = 40
@@ -47,20 +46,30 @@ def random_fruit(state: GameState) -> Position:
     return random.choice(positions)
 
 
-def key_to_turn(key: str) -> Turn:
+def key_to_direction(key: str) -> Direction | None:
     normalized_key = key.lower()
+    key_name = getattr(key, "name", None)
 
-    if normalized_key in ("a", "h") or key.name == "KEY_LEFT":
-        return Turn.LEFT
+    if normalized_key in ("w", "k") or key_name == "KEY_UP":
+        return Direction.UP
 
-    if normalized_key in ("d", "l") or key.name == "KEY_RIGHT":
-        return Turn.RIGHT
+    if normalized_key in ("d", "l") or key_name == "KEY_RIGHT":
+        return Direction.RIGHT
 
-    return Turn.NONE
+    if normalized_key in ("s", "j") or key_name == "KEY_DOWN":
+        return Direction.DOWN
+
+    if normalized_key in ("a", "h") or key_name == "KEY_LEFT":
+        return Direction.LEFT
+
+    return None
 
 
 def wants_to_quit(key: str) -> bool:
-    return key.lower() == "q" or key.name == "KEY_ESCAPE"
+    return (
+        key.lower() == "q"
+        or getattr(key, "name", None) == "KEY_ESCAPE"
+    )
 
 
 def draw_border(term: Terminal, state: GameState) -> str:
@@ -118,7 +127,7 @@ def draw_status(term: Terminal, state: GameState) -> str:
     text = (
         f"Pontuação: {state.score}  "
         f"Velocidade: {1 / speed_for_score(state.score):.1f}  "
-        "A/←: esquerda  D/→: direita  Q: sair"
+        "W/↑: cima  S/↓: baixo  A/←: esquerda  D/→: direita  Q: sair"
     )
 
     return term.move_xy(0, status_y) + term.clear_eol + text
@@ -177,13 +186,13 @@ def run_game(term: Terminal, initial: GameState) -> None:
             if wants_to_quit(key):
                 break
 
-            turn = key_to_turn(key)
+            direction = key_to_direction(key)
 
             replacement_fruit = random_fruit(state)
 
             result: Result[GameState, GameError] = advance(
                 state=state,
-                turn=turn,
+                direction=direction,
                 replacement_fruit=replacement_fruit,
             )
 

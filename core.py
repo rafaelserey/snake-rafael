@@ -9,22 +9,14 @@ from models import (
     GameState,
     Position,
     Snake,
-    Turn,
 )
 
 
-LEFT_TURNS: dict[Direction, Direction] = {
-    Direction.UP: Direction.LEFT,
-    Direction.LEFT: Direction.DOWN,
-    Direction.DOWN: Direction.RIGHT,
-    Direction.RIGHT: Direction.UP,
-}
-
-RIGHT_TURNS: dict[Direction, Direction] = {
-    Direction.UP: Direction.RIGHT,
-    Direction.RIGHT: Direction.DOWN,
-    Direction.DOWN: Direction.LEFT,
-    Direction.LEFT: Direction.UP,
+OPPOSITE_DIRECTIONS: dict[Direction, Direction] = {
+    Direction.UP: Direction.DOWN,
+    Direction.RIGHT: Direction.LEFT,
+    Direction.DOWN: Direction.UP,
+    Direction.LEFT: Direction.RIGHT,
 }
 
 
@@ -61,16 +53,18 @@ def initial_state(
     )
 
 
-def turn_direction(direction: Direction, turn: Turn) -> Direction:
-    match turn:
-        case Turn.LEFT:
-            return LEFT_TURNS[direction]
+def select_direction(
+    current_direction: Direction,
+    requested_direction: Direction | None,
+) -> Direction:
+    """Retorna uma direção válida sem permitir inversão imediata."""
+    if requested_direction is None:
+        return current_direction
 
-        case Turn.RIGHT:
-            return RIGHT_TURNS[direction]
+    if requested_direction == OPPOSITE_DIRECTIONS[current_direction]:
+        return current_direction
 
-        case Turn.NONE:
-            return direction
+    return requested_direction
 
 
 def wrap_position(position: Position, board: Board) -> Position:
@@ -83,9 +77,12 @@ def wrap_position(position: Position, board: Board) -> Position:
 def next_head(
     snake: Snake,
     board: Board,
-    turn: Turn,
+    requested_direction: Direction | None,
 ) -> tuple[Position, Direction]:
-    new_direction = turn_direction(snake.direction, turn)
+    new_direction = select_direction(
+        current_direction=snake.direction,
+        requested_direction=requested_direction,
+    )
     moved_head = snake.head.move(new_direction)
     wrapped_head = wrap_position(moved_head, board)
 
@@ -145,7 +142,7 @@ def stop_game(state: GameState) -> GameState:
 
 def advance(
     state: GameState,
-    turn: Turn,
+    direction: Direction | None,
     replacement_fruit: Position,
 ) -> Result[GameState, GameError]:
     """
@@ -159,9 +156,9 @@ def advance(
     """
 
     new_head, new_direction = next_head(
-        state.snake,
-        state.board,
-        turn,
+        snake=state.snake,
+        board=state.board,
+        requested_direction=direction,
     )
 
     ate_fruit = has_eaten_fruit(new_head, state.fruit)
